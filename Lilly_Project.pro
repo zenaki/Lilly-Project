@@ -14,16 +14,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    settings.cpp \
     settingsdialog.cpp
 
 HEADERS  += mainwindow.h \
-    settings.h \
     global.h \
     settingsdialog.h
 
 FORMS    += mainwindow.ui \
-    settings.ui \
     settingsdialog.ui
 
 RESOURCES += \

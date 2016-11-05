@@ -37,7 +37,7 @@ bool debug = false;
 
 void setup() {
   Serial.begin(57600);
-  Serial1.begin(57600);
+//  Serial.begin(57600);
   finger.begin(57600);
 
   memset(DataSerial, '\0', 50);
@@ -47,14 +47,14 @@ void setup() {
       Serial.println("Found fingerprint sensor!");
       Serial.println("Kirim : enroll;ID# / finger;0#");
     } else {
-      Serial.println("FP::Finger Print Found*");
+      Serial.println("#FP::Finger Print Found*");
     }
   } else {
     if (debug) {
       Serial.println("Did not find fingerprint sensor :(");
 //      while (1);
     } else {
-      Serial.println("FP::Finger Print NOT Found*");
+      Serial.println("#FP::Finger Print NOT Found*");
     }
   }
 
@@ -71,7 +71,7 @@ void setup() {
 }
 
 void loop() {
-  fng = false; erl = false;
+  fng = true; erl = false;
   while (Serial.available()) {
     char c[2]; c[1] = '\0'; c[0] = Serial.read();
     if (c[0] == 0x0d || c[0] == 0x0a) continue;
@@ -101,9 +101,9 @@ void loop() {
         Serial.print("DataSerial2 = "); Serial.print(DataSerial2); Serial.println(",");
       } else {
         if (erl) {
-          Serial.println("FP::Pendaftaran Jari*");
+          Serial.println("#FP::Pendaftaran Jari*");
         } else if (fng) {
-          Serial.println("FP::Menunggu Jari Ditempelkan*");
+          Serial.println("#FP::Menunggu Jari Ditempelkan*");
         }
       }
     }
@@ -116,7 +116,7 @@ void loop() {
       Serial.print("Enrolling ID #");
       Serial.println(id);
     } else {
-      Serial.print("FP::Pendaftaran Jari Dengan ID : ");
+      Serial.print("#FP::Pendaftaran Jari Dengan ID : ");
       Serial.print(id);
       Serial.println("*");
     }
@@ -159,7 +159,8 @@ void loop() {
             cnt++;
           }
 
-          if (strcmp(DataSerial1, "finger") == 0) {erl = false; fng = false;} 
+          if (strcmp(DataSerial1, "enroll") == 0 && strcmp(DataSerial2, "0") != 0) {erl = true; fng = false;} 
+          else if (strcmp(DataSerial1, "finger") == 0 && strcmp(DataSerial2, "0") == 0) {erl = false; fng = true;} 
           memset(DataSerial, '\0', 50);
 
           if (debug) {
@@ -181,14 +182,14 @@ void loop() {
             Serial.println("#");
             dapetJari = false;
           } else {
-            Serial.print("FP::GET ");
+            Serial.print("#FP::GET ");
             Serial.print(finger.fingerID, DEC);
-            Serial.println("#*");
+            Serial.println("*");
             dapetJari = false;
           }
         }
       } else {
-        Serial.println("FP::Keluar Dari Pemeriksaan Jari ...*");
+//        Serial.println("#FP::Keluar Dari Pemeriksaan Jari ...*");
         break;
       }
     }
@@ -201,7 +202,7 @@ uint8_t getFingerprintEnroll(int id) {
   if (debug) {
     Serial.print("Waiting for valid finger to enroll");
   } else {
-    Serial.println("FP::Menunggu Jari ...*");
+    Serial.println("#FP::Menunggu Jari ...*");
   }
   while (p != FINGERPRINT_OK) {
     p = finger.getImage();
@@ -226,7 +227,7 @@ uint8_t getFingerprintEnroll(int id) {
   }
 
   // OK success!
-//  if (!debug) Serial.println("FP::Pertahankan Jari Di Sensor ...*");
+//  if (!debug) Serial.println("#FP::Pertahankan Jari Di Sensor ...*");
   p = finger.image2Tz(1);
   switch (p) {
     case FINGERPRINT_OK:
@@ -251,7 +252,7 @@ uint8_t getFingerprintEnroll(int id) {
   if (debug) {
     Serial.println("Remove finger");
   } else {
-    Serial.println("FP::Jauhkan Jari Dari Sensor ...*");
+    Serial.println("#FP::Jauhkan Jari Dari Sensor ...*");
   }
   delay(2000);
   p = 0;
@@ -264,7 +265,7 @@ uint8_t getFingerprintEnroll(int id) {
   if (debug) {
     Serial.print("Place same finger again");
   } else {
-    Serial.println("FP::Tempelkan Jari Sebelumnya ...*");
+    Serial.println("#FP::Tempelkan Jari Sebelumnya ...*");
   }
   while (p != FINGERPRINT_OK) {
     p = finger.getImage();
@@ -289,7 +290,7 @@ uint8_t getFingerprintEnroll(int id) {
   }
 
   // OK success!
-//  if (!debug) Serial.println("FP::Pertahankan Jari Di Sensor ...*");
+//  if (!debug) Serial.println("#FP::Pertahankan Jari Di Sensor ...*");
   p = finger.image2Tz(2);
   switch (p) {
     case FINGERPRINT_OK:
@@ -331,7 +332,7 @@ uint8_t getFingerprintEnroll(int id) {
   if (debug) {
     Serial.print("ID #"); Serial.println(id);
   } else{
-    Serial.print("FP::ID #"); Serial.print(id);
+    Serial.print("#FP::ID "); Serial.print(id);
   }
   p = finger.storeModel(id);
   if (p == FINGERPRINT_OK) {
@@ -436,8 +437,10 @@ uint8_t getFingerprintID() {
   }   
   
   // found a match!
-  Serial.print("Found ID #"); Serial.print(finger.fingerID); 
-  Serial.print(" with confidence of "); Serial.println(finger.confidence); 
+  if (debug) {
+    Serial.print("Found ID #"); Serial.print(finger.fingerID); 
+    Serial.print(" with confidence of "); Serial.println(finger.confidence); 
+  }
 }
 
 // returns -1 if failed, otherwise returns ID #
@@ -467,15 +470,15 @@ void RFID_read() {
   if ( ! rfid.PICC_ReadCardSerial())
     return;
 
-//  Serial1.print(F("PICC type: "));
+//  Serial.print(F("PICC type: "));
   MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-//  Serial1.println(rfid.PICC_GetTypeName(piccType));
+//  Serial.println(rfid.PICC_GetTypeName(piccType));
 
   // Check is the PICC of Classic MIFARE type
   if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&  
     piccType != MFRC522::PICC_TYPE_MIFARE_1K &&
     piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
-//    Serial1.println(F("Your tag is not of type MIFARE Classic."));
+//    Serial.println(F("Your tag is not of type MIFARE Classic."));
     return;
   }
 
@@ -484,13 +487,13 @@ void RFID_read() {
   }
     
   if (debug) {
-    Serial1.print("rfid;");
+    Serial.print("rfid;");
     printHex(rfid.uid.uidByte, rfid.uid.size);
-    Serial1.println("#");
+    Serial.println("#");
   } else {
-    Serial1.print("RFID::GET ");
+    Serial.print("#RFID::GET ");
     printHex(rfid.uid.uidByte, rfid.uid.size);
-    Serial1.println("#*");
+    Serial.println("*");
   }
 
   // Halt PICC
@@ -505,8 +508,8 @@ void RFID_read() {
  */
 void printHex(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
-    Serial1.print(buffer[i] < 0x10 ? " 0" : " ");
-    Serial1.print(buffer[i], HEX);
+    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+    Serial.print(buffer[i], HEX);
   }
 }
 
@@ -515,7 +518,7 @@ void printHex(byte *buffer, byte bufferSize) {
  */
 void printDec(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
-    Serial1.print(buffer[i] < 0x10 ? " 0" : " ");
-    Serial1.print(buffer[i], DEC);
+    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+    Serial.print(buffer[i], DEC);
   }
 }

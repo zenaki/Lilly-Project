@@ -19,7 +19,7 @@ public:
 private:
     Ui::SettingsDialog *ui;
 
-    struct serial s[2];
+    struct serial s;
 
     void fillPortsInfo();
     void fillPortsParameters();
@@ -30,7 +30,6 @@ private:
 
 private slots:
     void showPortInfo(int idx);
-    void showPortInfo_2(int idx);
     void on_pbApply_clicked();
     void on_pbCancel_clicked();
 };
