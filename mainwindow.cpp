@@ -26,50 +26,78 @@ void MainWindow::on_actionRefresh_triggered()
 
 void MainWindow::on_actionConnect_triggered()
 {
-    if (!set || this->s.name == "N/A" || this->s.name == "") {
+    if (!set || this->s.serialCommunication.name == "N/A" || this->s.serialCommunication.name == "" || this->s.Database.host == "") {
         settingsDialog = new SettingsDialog;
         settingsDialog->exec();
         getSetting();
     }
-    if (this->s.name != "N/A") {
+    if (this->s.serialCommunication.name != "N/A" || this->s.Database.host != "") {
         serial_port = new QSerialPort;
         connect(serial_port, SIGNAL(readyRead()), this, SLOT(readData_Serial()));
-        serial_port->setPortName(this->s.name);
-        serial_port->setBaudRate(this->s.baudRate);
-        serial_port->setDataBits(this->s.dataBits);
-        serial_port->setParity(this->s.parity);
-        serial_port->setStopBits(this->s.stopBits);
-        serial_port->setFlowControl(this->s.flowControl);
+        serial_port->setPortName(this->s.serialCommunication.name);
+        serial_port->setBaudRate(this->s.serialCommunication.baudRate);
+        serial_port->setDataBits(this->s.serialCommunication.dataBits);
+        serial_port->setParity(this->s.serialCommunication.parity);
+        serial_port->setStopBits(this->s.serialCommunication.stopBits);
+        serial_port->setFlowControl(this->s.serialCommunication.flowControl);
         if (serial_port->open(QIODevice::ReadWrite)) {
             serial_connect = true;
         } else {
             serial_connect = false;
             serial_port = NULL;
         }
+        db = initMysql.connect_db();
+        if (db.isOpen()) {
+            database_connect = true;
+        } else {
+            database_connect = false;
+        }
     } else {
         set = false;
         serial_connect = false;
     }
 
-    if (serial_connect) {
-        QMessageBox::information(this, "Serial Communication", " Berhasil Terkoneksi");
+    if (serial_connect && database_connect) {
+        QMessageBox::information(this, "Serial Communication & Database", " Berhasil Terkoneksi");
         ui->actionConnect->setEnabled(false); ui->actionDisconnect->setEnabled(true);
     } else {
-        QMessageBox::critical(this, "Serial Communication", "Koneksi Gagal !!");
+        if (!serial_connect && database_connect) {
+            QMessageBox::critical(this, "Serial Communication & Database", "Koneksi Serial Gagal !!");
+        } else if (serial_connect && !database_connect) {
+            QMessageBox::critical(this, "Serial Communication & Database", "Koneksi Database Gagal !!");
+        } else {
+            QMessageBox::critical(this, "Serial Communication & Database", "Koneksi Serial dan Database Gagal !!");
+        }
         ui->actionConnect->setEnabled(true); ui->actionDisconnect->setEnabled(false);
     }
 }
 
 void MainWindow::on_actionDisconnect_triggered()
 {
-    if (serial_connect) {
+    if (serial_connect && database_connect) {
         if (serial_port->isOpen()) {
             serial_port->close();
-            QMessageBox::information(this, "Serial Communication", "Berhasil Disconnect");
-            ui->actionConnect->setEnabled(true); ui->actionDisconnect->setEnabled(false);
+            serial_connect = false;
+        }
+        if (db.isOpen()) {
+            db.close();
+            database_connect = false;
+        }
+        if (serial_connect && database_connect) {
+            QMessageBox::critical(this, "Serial Communication & Database", "Serial dan Database gagal Disconnect");
+        } else {
+            if (!serial_connect && database_connect) {
+                QMessageBox::information(this, "Serial Communication & Database", "Serial Berhasil Disconnect/nDatabase gagal Disconnect");
+            } else if (serial_connect && !database_connect) {
+                QMessageBox::information(this, "Serial Communication & Database", "Serial gagal Disconnect/nDatabase Berhasil Disconnect");
+            } else {
+                QMessageBox::critical(this, "Serial Communication & Database", "Serial dan Database Berhasil Disconnect");
+                ui->actionConnect->setEnabled(true); ui->actionDisconnect->setEnabled(false);
+            }
         }
     } else {
         QMessageBox::warning(this, "Serial Communication", "Tidak ada Koneksi");
+        ui->actionConnect->setEnabled(true); ui->actionDisconnect->setEnabled(false);
     }
 }
 
@@ -87,12 +115,7 @@ void MainWindow::readData_Serial()
         int b = str_read.indexOf("*");
         if (str_read.indexOf("GET") > 0) dapatFP = true;
         str_read = str_read.mid(a+4, b-a);
-        str_read.remove("FP::").remove("GET").remove("*");
-//        if (str_read == "Pendaftaran Jari\r\n") {
-//            baca = false; daftar = true;
-//        } else if (str_read == "Menunggu Jari Ditempelkan\r\n") {
-//            baca = true; daftar = false;
-//        }
+        str_read.remove("FP::").remove("GET").remove("*").remove("\r\n");
         if (dapatFP) {
             ui->pte_log->appendPlainText("GET Finger Print << " + str_read);
             dapatFP = false;
@@ -105,13 +128,13 @@ void MainWindow::readData_Serial()
         int b = str_read.indexOf("*");
         if (str_read.indexOf("GET") > 0) dapatRFID = true;
         str_read = str_read.mid(a+6, b-a);
-        str_read.remove("GET").remove("*").remove(" ");
+        str_read.remove("GET").remove("*").remove(" ").remove("\r\n");
         if (dapatRFID) {
             ui->pte_log->appendPlainText("GET RFID << " + str_read);
+            dapatRFID = false;
         } else {
             ui->pte_log->appendPlainText(str_read);
         }
-
         str_read.clear();
     }
 }
@@ -121,35 +144,35 @@ void MainWindow::getSetting()
     if (QFile("settings.ini").exists()) {
         QSettings sett("settings.ini", QSettings::IniFormat);
 
-        this->s.name = sett.value("SERIAL/NAME").toString();
-        this->s.c_name_id = sett.value("SERIAL/C_NAME_ID").toInt();
+        this->s.serialCommunication.name = sett.value("SERIAL/NAME").toString();
+        this->s.serialCommunication.c_name_id = sett.value("SERIAL/C_NAME_ID").toInt();
 
-        this->s.baudRate = static_cast<QSerialPort::BaudRate>(
+        this->s.serialCommunication.baudRate = static_cast<QSerialPort::BaudRate>(
                     sett.value("SERIAL/BAUDRATE").toInt());
-        this->s.c_baudRate_id = sett.value("SERIAL/C_BAUDRATE_ID").toInt();
-        this->s.stringBaudRate = sett.value("SERIAL/STRING_BAUDRATE").toString();
+        this->s.serialCommunication.c_baudRate_id = sett.value("SERIAL/C_BAUDRATE_ID").toInt();
+        this->s.serialCommunication.stringBaudRate = sett.value("SERIAL/STRING_BAUDRATE").toString();
 
-        this->s.dataBits = static_cast<QSerialPort::DataBits>(
+        this->s.serialCommunication.dataBits = static_cast<QSerialPort::DataBits>(
                     sett.value("SERIAL/DATA_BITS").toInt());
-        this->s.c_dataBits_id = sett.value("SERIAL/C_DATA_BITS_ID").toInt();
-        this->s.stringDataBits = sett.value("SERIAL/STRING_DATA_BITS").toString();
+        this->s.serialCommunication.c_dataBits_id = sett.value("SERIAL/C_DATA_BITS_ID").toInt();
+        this->s.serialCommunication.stringDataBits = sett.value("SERIAL/STRING_DATA_BITS").toString();
 
-        this->s.parity = static_cast<QSerialPort::Parity>(
+        this->s.serialCommunication.parity = static_cast<QSerialPort::Parity>(
                     sett.value("SERIAL/PARITY").toInt());
-        this->s.c_parity_id = sett.value("SERIAL/C_PARITY_ID").toInt();
-        this->s.stringParity = sett.value("SERIAL/STRING_PARITY").toString();
+        this->s.serialCommunication.c_parity_id = sett.value("SERIAL/C_PARITY_ID").toInt();
+        this->s.serialCommunication.stringParity = sett.value("SERIAL/STRING_PARITY").toString();
 
-        this->s.stopBits = static_cast<QSerialPort::StopBits>(
+        this->s.serialCommunication.stopBits = static_cast<QSerialPort::StopBits>(
                     sett.value("SERIAL/STOP_BITS").toInt());
-        this->s.c_stopBits_id = sett.value("SERIAL/C_STOP_BITS_ID").toInt();
-        this->s.stringStopBits = sett.value("SERIAL/STRING_STOP_BITS").toString();
+        this->s.serialCommunication.c_stopBits_id = sett.value("SERIAL/C_STOP_BITS_ID").toInt();
+        this->s.serialCommunication.stringStopBits = sett.value("SERIAL/STRING_STOP_BITS").toString();
 
-        this->s.flowControl = static_cast<QSerialPort::FlowControl>(
+        this->s.serialCommunication.flowControl = static_cast<QSerialPort::FlowControl>(
                     sett.value("SERIAL/FLOW_CONTROL").toInt());
-        this->s.c_flowControl_id = sett.value("SERIAL/C_FLOW_CONTROL_ID").toInt();
-        this->s.stringFlowControl = sett.value("SERIAL/STRING_FLOW_CONTROL").toString();
+        this->s.serialCommunication.c_flowControl_id = sett.value("SERIAL/C_FLOW_CONTROL_ID").toInt();
+        this->s.serialCommunication.stringFlowControl = sett.value("SERIAL/STRING_FLOW_CONTROL").toString();
 
-        if (this->s.name != "N/A") {
+        if (this->s.serialCommunication.name != "N/A") {
             set = true;
         } else {
             set = false;

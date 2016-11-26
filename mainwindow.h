@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "global.h"
 #include "settingsdialog.h"
+#include "init_mysql.h"
 
 namespace Ui {
 class MainWindow;
@@ -31,12 +32,14 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    struct serial s;
+    struct setting s;
     QSerialPort *serial_port; bool serial_connect; QString str_read;
     SettingsDialog *settingsDialog;
     bool set;
     void getSetting();
     bool baca; bool daftar; bool dapatFP; bool dapatRFID;
+    init_mysql initMysql; bool database_connect;
+    QSqlDatabase db;
 };
 
 #endif // MAINWINDOW_H

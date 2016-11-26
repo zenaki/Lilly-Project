@@ -11,6 +11,10 @@
 #include <QSettings>
 #include <QVariant>
 
+#include <QSqlError>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+
 struct serial {
     QString name;
     int c_name_id;
@@ -34,6 +38,18 @@ struct serial {
     QSerialPort::FlowControl flowControl;
     int c_flowControl_id;
     QString stringFlowControl;
+};
+
+struct database {
+    QString host;
+    QString db_name;
+    QString username;
+    QString password;
+};
+
+struct setting {
+    struct serial serialCommunication;
+    struct database Database;
 };
 
 #endif // GLOBAL_H

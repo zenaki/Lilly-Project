@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui serialport
+QT       += core gui serialport sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -14,11 +14,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    settingsdialog.cpp
+    settingsdialog.cpp \
+    init_mysql.cpp
 
 HEADERS  += mainwindow.h \
     global.h \
-    settingsdialog.h
+    settingsdialog.h \
+    init_mysql.h
 
 FORMS    += mainwindow.ui \
     settingsdialog.ui

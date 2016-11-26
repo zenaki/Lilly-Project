@@ -109,46 +109,46 @@ void SettingsDialog::setSetting()
 {
     for (int i = ui->serialPortInfoListBox->count(); i >= 0; i--) {
         ui->serialPortInfoListBox->setCurrentIndex(i);
-        if (ui->serialPortInfoListBox->currentText() == this->s.name) {
+        if (ui->serialPortInfoListBox->currentText() == this->s.serialCommunication.name) {
             break;
         }
     }
-    ui->baudRateBox->setCurrentIndex(this->s.c_baudRate_id);
-    ui->dataBitsBox->setCurrentIndex(this->s.c_dataBits_id);
-    ui->parityBox->setCurrentIndex(this->s.c_parity_id);
-    ui->stopBitsBox->setCurrentIndex(this->s.c_stopBits_id);
-    ui->flowControlBox->setCurrentIndex(this->s.c_flowControl_id);
+    ui->baudRateBox->setCurrentIndex(this->s.serialCommunication.c_baudRate_id);
+    ui->dataBitsBox->setCurrentIndex(this->s.serialCommunication.c_dataBits_id);
+    ui->parityBox->setCurrentIndex(this->s.serialCommunication.c_parity_id);
+    ui->stopBitsBox->setCurrentIndex(this->s.serialCommunication.c_stopBits_id);
+    ui->flowControlBox->setCurrentIndex(this->s.serialCommunication.c_flowControl_id);
 }
 
 void SettingsDialog::getSetting()
 {
-    this->s.name = ui->serialPortInfoListBox->currentText();
-    this->s.c_name_id = ui->serialPortInfoListBox->currentIndex();
+    this->s.serialCommunication.name = ui->serialPortInfoListBox->currentText();
+    this->s.serialCommunication.c_name_id = ui->serialPortInfoListBox->currentIndex();
 
-    this->s.baudRate = static_cast<QSerialPort::BaudRate>(
+    this->s.serialCommunication.baudRate = static_cast<QSerialPort::BaudRate>(
                 ui->baudRateBox->currentData().toInt());
-    this->s.c_baudRate_id = ui->baudRateBox->currentIndex();
-    this->s.stringBaudRate = ui->baudRateBox->currentText();
+    this->s.serialCommunication.c_baudRate_id = ui->baudRateBox->currentIndex();
+    this->s.serialCommunication.stringBaudRate = ui->baudRateBox->currentText();
 
-    this->s.dataBits = static_cast<QSerialPort::DataBits>(
+    this->s.serialCommunication.dataBits = static_cast<QSerialPort::DataBits>(
                 ui->dataBitsBox->currentData().toInt());
-    this->s.c_dataBits_id = ui->dataBitsBox->currentIndex();
-    this->s.stringDataBits = ui->dataBitsBox->currentText();
+    this->s.serialCommunication.c_dataBits_id = ui->dataBitsBox->currentIndex();
+    this->s.serialCommunication.stringDataBits = ui->dataBitsBox->currentText();
 
-    this->s.parity = static_cast<QSerialPort::Parity>(
+    this->s.serialCommunication.parity = static_cast<QSerialPort::Parity>(
                 ui->parityBox->currentData().toInt());
-    this->s.c_parity_id = ui->parityBox->currentIndex();
-    this->s.stringParity = ui->parityBox->currentText();
+    this->s.serialCommunication.c_parity_id = ui->parityBox->currentIndex();
+    this->s.serialCommunication.stringParity = ui->parityBox->currentText();
 
-    this->s.stopBits = static_cast<QSerialPort::StopBits>(
+    this->s.serialCommunication.stopBits = static_cast<QSerialPort::StopBits>(
                 ui->stopBitsBox->currentData().toInt());
-    this->s.c_stopBits_id = ui->stopBitsBox->currentIndex();
-    this->s.stringStopBits = ui->stopBitsBox->currentText();
+    this->s.serialCommunication.c_stopBits_id = ui->stopBitsBox->currentIndex();
+    this->s.serialCommunication.stringStopBits = ui->stopBitsBox->currentText();
 
-    this->s.flowControl = static_cast<QSerialPort::FlowControl>(
+    this->s.serialCommunication.flowControl = static_cast<QSerialPort::FlowControl>(
                 ui->flowControlBox->currentData().toInt());
-    this->s.c_flowControl_id = ui->flowControlBox->currentIndex();
-    this->s.stringFlowControl = ui->flowControlBox->currentText();
+    this->s.serialCommunication.c_flowControl_id = ui->flowControlBox->currentIndex();
+    this->s.serialCommunication.stringFlowControl = ui->flowControlBox->currentText();
 }
 
 void SettingsDialog::readSetting()
@@ -156,12 +156,12 @@ void SettingsDialog::readSetting()
     if (QFile("settings.ini").exists()) {
         QSettings sett("settings.ini", QSettings::IniFormat);
 
-        this->s.name = sett.value("SERIAL/NAME").toString();
-        this->s.c_baudRate_id = sett.value("SERIAL/C_BAUDRATE_ID").toInt();
-        this->s.c_dataBits_id = sett.value("SERIAL/C_DATA_BITS_ID").toInt();
-        this->s.c_parity_id = sett.value("SERIAL/C_PARITY_ID").toInt();
-        this->s.c_stopBits_id = sett.value("SERIAL/C_STOP_BITS_ID").toInt();
-        this->s.c_flowControl_id = sett.value("SERIAL/C_FLOW_CONTROL_ID").toInt();
+        this->s.serialCommunication.name = sett.value("SERIAL/NAME").toString();
+        this->s.serialCommunication.c_baudRate_id = sett.value("SERIAL/C_BAUDRATE_ID").toInt();
+        this->s.serialCommunication.c_dataBits_id = sett.value("SERIAL/C_DATA_BITS_ID").toInt();
+        this->s.serialCommunication.c_parity_id = sett.value("SERIAL/C_PARITY_ID").toInt();
+        this->s.serialCommunication.c_stopBits_id = sett.value("SERIAL/C_STOP_BITS_ID").toInt();
+        this->s.serialCommunication.c_flowControl_id = sett.value("SERIAL/C_FLOW_CONTROL_ID").toInt();
 
         setSetting();
     }
@@ -172,28 +172,39 @@ void SettingsDialog::writeSetting()
     getSetting();
     QSettings sett("settings.ini", QSettings::IniFormat);
 
+    //** SERIAL COMMUNICATION **//
+
     sett.beginGroup("SERIAL");
-    sett.setValue("NAME", this->s.name);
-    sett.setValue("C_NAME_ID", this->s.c_name_id);
+    sett.setValue("NAME", this->s.serialCommunication.name);
+    sett.setValue("C_NAME_ID", this->s.serialCommunication.c_name_id);
 
-    sett.setValue("BAUDRATE", this->s.baudRate);
-    sett.setValue("C_BAUDRATE_ID", this->s.c_baudRate_id);
-    sett.setValue("STRING_BAUDRATE", this->s.stringBaudRate);
+    sett.setValue("BAUDRATE", this->s.serialCommunication.baudRate);
+    sett.setValue("C_BAUDRATE_ID", this->s.serialCommunication.c_baudRate_id);
+    sett.setValue("STRING_BAUDRATE", this->s.serialCommunication.stringBaudRate);
 
-    sett.setValue("DATA_BITS", this->s.dataBits);
-    sett.setValue("C_DATA_BITS_ID", this->s.c_dataBits_id);
-    sett.setValue("STRING_DATA_BITS", this->s.stringDataBits);
+    sett.setValue("DATA_BITS", this->s.serialCommunication.dataBits);
+    sett.setValue("C_DATA_BITS_ID", this->s.serialCommunication.c_dataBits_id);
+    sett.setValue("STRING_DATA_BITS", this->s.serialCommunication.stringDataBits);
 
-    sett.setValue("PARITY", this->s.parity);
-    sett.setValue("C_PARITY_ID", this->s.c_parity_id);
-    sett.setValue("STRING_PARITY", this->s.stringParity);
+    sett.setValue("PARITY", this->s.serialCommunication.parity);
+    sett.setValue("C_PARITY_ID", this->s.serialCommunication.c_parity_id);
+    sett.setValue("STRING_PARITY", this->s.serialCommunication.stringParity);
 
-    sett.setValue("STOP_BITS", this->s.stopBits);
-    sett.setValue("C_STOP_BITS_ID", this->s.c_stopBits_id);
-    sett.setValue("STRING_STOP_BITS", this->s.stringStopBits);
+    sett.setValue("STOP_BITS", this->s.serialCommunication.stopBits);
+    sett.setValue("C_STOP_BITS_ID", this->s.serialCommunication.c_stopBits_id);
+    sett.setValue("STRING_STOP_BITS", this->s.serialCommunication.stringStopBits);
 
-    sett.setValue("FLOW_CONTROL", this->s.flowControl);
-    sett.setValue("C_FLOW_CONTROL_ID", this->s.c_flowControl_id);
-    sett.setValue("STRING_FLOW_CONTROL", this->s.stringFlowControl);
+    sett.setValue("FLOW_CONTROL", this->s.serialCommunication.flowControl);
+    sett.setValue("C_FLOW_CONTROL_ID", this->s.serialCommunication.c_flowControl_id);
+    sett.setValue("STRING_FLOW_CONTROL", this->s.serialCommunication.stringFlowControl);
+    sett.endGroup();
+
+    //** DATABASE **//
+
+    sett.beginGroup("DATABASE");
+    sett.setValue("HOST", this->s.Database.host);
+    sett.setValue("DB_NAME", this->s.Database.db_name);
+    sett.setValue("USERNAME", this->s.Database.username);
+    sett.setValue("PASSWORD", this->s.Database.password);
     sett.endGroup();
 }

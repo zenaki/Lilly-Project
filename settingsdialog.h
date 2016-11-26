@@ -19,7 +19,7 @@ public:
 private:
     Ui::SettingsDialog *ui;
 
-    struct serial s;
+    struct setting s;
 
     void fillPortsInfo();
     void fillPortsParameters();
