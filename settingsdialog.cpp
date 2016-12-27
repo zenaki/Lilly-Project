@@ -97,12 +97,14 @@ void SettingsDialog::showPortInfo(int idx)
 void SettingsDialog::on_pbApply_clicked()
 {
     writeSetting();
-    this->close();
+//    this->close();
+    this->hide();
 }
 
 void SettingsDialog::on_pbCancel_clicked()
 {
-    this->close();
+//    this->close();
+    this->hide();
 }
 
 void SettingsDialog::setSetting()
@@ -118,6 +120,11 @@ void SettingsDialog::setSetting()
     ui->parityBox->setCurrentIndex(this->s.serialCommunication.c_parity_id);
     ui->stopBitsBox->setCurrentIndex(this->s.serialCommunication.c_stopBits_id);
     ui->flowControlBox->setCurrentIndex(this->s.serialCommunication.c_flowControl_id);
+
+    ui->le_db_host->setText(this->s.Database.host);
+    ui->le_db_name->setText(this->s.Database.db_name);
+    ui->le_db_username->setText(this->s.Database.username);
+    ui->le_db_password->setText(this->s.Database.password);
 }
 
 void SettingsDialog::getSetting()
@@ -149,6 +156,11 @@ void SettingsDialog::getSetting()
                 ui->flowControlBox->currentData().toInt());
     this->s.serialCommunication.c_flowControl_id = ui->flowControlBox->currentIndex();
     this->s.serialCommunication.stringFlowControl = ui->flowControlBox->currentText();
+
+    this->s.Database.host = ui->le_db_host->text();
+    this->s.Database.db_name = ui->le_db_name->text();
+    this->s.Database.username = ui->le_db_username->text();
+    this->s.Database.password = ui->le_db_password->text();
 }
 
 void SettingsDialog::readSetting()
@@ -162,6 +174,11 @@ void SettingsDialog::readSetting()
         this->s.serialCommunication.c_parity_id = sett.value("SERIAL/C_PARITY_ID").toInt();
         this->s.serialCommunication.c_stopBits_id = sett.value("SERIAL/C_STOP_BITS_ID").toInt();
         this->s.serialCommunication.c_flowControl_id = sett.value("SERIAL/C_FLOW_CONTROL_ID").toInt();
+
+        this->s.Database.host = sett.value("DATABASE/HOST").toString();
+        this->s.Database.db_name = sett.value("DATABASE/DB_NAME").toString();
+        this->s.Database.username = sett.value("DATABASE/USERNAME").toString();
+        this->s.Database.password = sett.value("DATABASE/PASSWORD").toString();
 
         setSetting();
     }

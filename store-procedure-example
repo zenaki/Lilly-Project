@@ -1,0 +1,23 @@
+CREATE TABLE `example_log` (
+  `idexample_log` int(11) NOT NULL AUTO_INCREMENT,
+  `description` varchar(45) NOT NULL,
+  `input_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idexample_log`)
+);
+
+USE `rumah_susun`;
+DROP procedure IF EXISTS `example_procedure`;
+
+DELIMITER $$
+USE `rumah_susun`$$
+CREATE PROCEDURE `example_procedure`(in value varchar(45), out last_id int(11))
+BEGIN
+    insert into example_log(description) values(value);
+    set last_id = last_insert_id();
+END$$
+
+DELIMITER ;
+
+select * from example_log;
+call example_procedure('test 1', @result);
+select @result;

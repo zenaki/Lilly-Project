@@ -15,15 +15,21 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     settingsdialog.cpp \
-    init_mysql.cpp
+    init_mysql.cpp \
+    logindialog.cpp \
+    formkeluarga.cpp
 
 HEADERS  += mainwindow.h \
     global.h \
     settingsdialog.h \
-    init_mysql.h
+    init_mysql.h \
+    logindialog.h \
+    formkeluarga.h
 
 FORMS    += mainwindow.ui \
-    settingsdialog.ui
+    settingsdialog.ui \
+    logindialog.ui \
+    formkeluarga.ui
 
 RESOURCES += \
     rsc.qrc

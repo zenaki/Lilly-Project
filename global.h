@@ -15,6 +15,15 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 
+#include <QLineEdit>
+#include <QStandardItemModel>
+
+#include <QTimer>
+#include <QDateTime>
+
+#define MAX_KELUARGA 2
+#define MAX_ANGGOTA_KELUARGA 5
+
 struct serial {
     QString name;
     int c_name_id;
@@ -50,6 +59,40 @@ struct database {
 struct setting {
     struct serial serialCommunication;
     struct database Database;
+};
+
+struct anggota {
+    int id_keluarga;
+    QString no_ktp;
+    QString nama_lengkap;
+    QString tempat_lahir;
+    QString tanggal_lahir;
+    QString agama;
+    QString no_telp;
+    QString foto;
+
+    QString FingerID;
+    QString RFID;
+};
+
+struct keluarga {
+    int id_kpl_keluarga;
+    QString no_ktp;
+    QString nama_lengkap;
+    QString tempat_lahir;
+    QString tanggal_lahir;
+    QString agama;
+    QString no_telp;
+    QString foto;
+
+    int no_kamar;
+
+    QString FingerID;
+    QString RFID;
+
+    int jml_anggota_keluarga;
+
+    struct anggota anggotaKeluarga[MAX_ANGGOTA_KELUARGA];
 };
 
 #endif // GLOBAL_H

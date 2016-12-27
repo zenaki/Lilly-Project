@@ -6,8 +6,8 @@ uint8_t getFingerprintEnroll(int id);
 
 // pin #10 is IN from sensor (GREEN wire)
 // pin #11 is OUT from arduino  (WHITE wire)
-//SoftwareSerial mySerial(2, 3);
-SoftwareSerial mySerial(10, 11);
+SoftwareSerial mySerial(2, 3);
+//SoftwareSerial mySerial(10, 11);
 
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 //** FingerPrint **//
@@ -16,10 +16,10 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 #include <SPI.h>
 #include <MFRC522.h>
 
-//#define SS_PIN 10
-//#define RST_PIN 9
-#define SS_PIN 53
-#define RST_PIN 5
+#define SS_PIN 10
+#define RST_PIN 9
+//#define SS_PIN 53
+//#define RST_PIN 5
  
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 
@@ -68,47 +68,10 @@ void setup() {
 //  Serial.println(F("This code scan the MIFARE Classsic NUID."));
 //  Serial.print(F("Using the following key:"));
 //  printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
+  fng = true; erl = false;
 }
 
 void loop() {
-  fng = true; erl = false;
-  while (Serial.available()) {
-    char c[2]; c[1] = '\0'; c[0] = Serial.read();
-    if (c[0] == 0x0d || c[0] == 0x0a) continue;
-      
-    strcat(DataSerial, c);
-      
-    if (strchr(DataSerial, '#') != NULL) {
-      temp = strtok (DataSerial,";#");
-      int cnt = 0;
-      memset(DataSerial1, '\0', 10);
-      memset(DataSerial2, '\0', 10);
-      while (temp != NULL)
-      {
-//        Serial.println(temp);
-        if (cnt == 0) strcpy(DataSerial1, temp);
-        if (cnt == 1) strcpy(DataSerial2, temp);
-        temp = strtok (NULL, ";#");
-        cnt++;
-      }
-
-      if (strcmp(DataSerial1, "enroll") == 0 && strcmp(DataSerial2, "0") != 0) {erl = true; fng = false;} 
-      else if (strcmp(DataSerial1, "finger") == 0 && strcmp(DataSerial2, "0") == 0) {erl = false; fng = true;} 
-      memset(DataSerial, '\0', 50);
-
-      if (debug) {
-        Serial.print("DataSerial1 = "); Serial.print(DataSerial1); Serial.println(",");
-        Serial.print("DataSerial2 = "); Serial.print(DataSerial2); Serial.println(",");
-      } else {
-        if (erl) {
-          Serial.println("#FP::Pendaftaran Jari*");
-        } else if (fng) {
-          Serial.println("#FP::Menunggu Jari Ditempelkan*");
-        }
-      }
-    }
-  }
-  
   if (erl && atoi(DataSerial2) != 0) {
     int id = atoi(DataSerial2);
     if (debug) {
@@ -116,25 +79,32 @@ void loop() {
       Serial.print("Enrolling ID #");
       Serial.println(id);
     } else {
-      Serial.print("#FP::Pendaftaran Jari Dengan ID : ");
-      Serial.print(id);
-      Serial.println("*");
+//      Serial.print("#FP::Pendaftaran Jari Dengan ID : ");
+//      Serial.print(id);
+//      Serial.println("*");
     }
     while (!getFingerprintEnroll(id));
     if (simpanJari) {
       if (debug) {
+        Serial.println();
         Serial.print("stored;");
         Serial.print(id, DEC);
         Serial.println("#");
+      } else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Berhasil Tersimpan*");
       }
     } else {
       if (debug) {
+        Serial.println();
         Serial.print("FAIL store with this ID ");
         Serial.print(id, DEC);
         Serial.println("#");
+      } else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
       }
     }
-  } else if (fng && atoi(DataSerial2) == 0) {
+    fng = true; erl = false;
+  } else if (fng) {
     if (debug) {
       Serial.println("Read Fingerprint");
     }
@@ -198,11 +168,14 @@ void loop() {
 }
 
 uint8_t getFingerprintEnroll(int id) {
+  int tOut = 200, c_tOut = 0;
+  simpanJari = false;
+
   int p = -1;
   if (debug) {
-    Serial.print("Waiting for valid finger to enroll");
+    Serial.println("Waiting for valid finger to enroll");
   } else {
-    Serial.println("#FP::Menunggu Jari ...*");
+    Serial.println("#FP::Daftar::Menunggu Jari ...*");
   }
   while (p != FINGERPRINT_OK) {
     p = finger.getImage();
@@ -223,223 +196,211 @@ uint8_t getFingerprintEnroll(int id) {
       if (debug) Serial.println("Unknown error");
       break;
     }
+    c_tOut++;
+    if (c_tOut > tOut) return true;
     RFID_read();
   }
+  c_tOut = 0;
 
-  // OK success!
-//  if (!debug) Serial.println("#FP::Pertahankan Jari Di Sensor ...*");
+//  OK success!
+//  if (!debug) Serial.println("#FP::Daftar::Pertahankan Jari Di Sensor ...*");
   p = finger.image2Tz(1);
   switch (p) {
     case FINGERPRINT_OK:
       if (debug) Serial.println("Image converted");
       break;
     case FINGERPRINT_IMAGEMESS:
-      if (debug) Serial.println("Image too messy");
+      if (debug) {Serial.println("Image too messy");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     case FINGERPRINT_PACKETRECIEVEERR:
-      if (debug) Serial.println("Communication error");
+      if (debug) {Serial.println("Communication error");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     case FINGERPRINT_FEATUREFAIL:
-      if (debug) Serial.println("Could not find fingerprint features");
+      if (debug) {Serial.println("Could not find fingerprint features");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     case FINGERPRINT_INVALIDIMAGE:
-      if (debug) Serial.println("Could not find fingerprint features");
+      if (debug) {Serial.println("Could not find fingerprint features");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     default:
-      if (debug) Serial.println("Unknown error");
+      if (debug) {Serial.println("Unknown error");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
   }
+
   if (debug) {
     Serial.println("Remove finger");
   } else {
-    Serial.println("#FP::Jauhkan Jari Dari Sensor ...*");
+    Serial.println("#FP::Daftar::Jauhkan Jari*");
   }
   delay(2000);
+
   p = 0;
   while (p != FINGERPRINT_NOFINGER) {
     p = finger.getImage();
-    RFID_read();
   }
 
   p = -1;
   if (debug) {
-    Serial.print("Place same finger again");
+    Serial.println("Place same finger again");
   } else {
-    Serial.println("#FP::Tempelkan Jari Sebelumnya ...*");
+    Serial.println("#FP::Daftar::Tempelkan Jari Sebelumnya*");
   }
   while (p != FINGERPRINT_OK) {
     p = finger.getImage();
     switch (p) {
-    case FINGERPRINT_OK:
-      if (debug) Serial.println("Image taken");
-      break;
-    case FINGERPRINT_NOFINGER:
-      if (debug) Serial.print(".");
-      break;
-    case FINGERPRINT_PACKETRECIEVEERR:
-      if (debug) Serial.println("Communication error");
-      break;
-    case FINGERPRINT_IMAGEFAIL:
-      if (debug) Serial.println("Imaging error");
-      break;
-    default:
-      if (debug) Serial.println("Unknown error");
-      break;
+      case FINGERPRINT_OK:
+        if (debug) {Serial.println(); Serial.println("Image taken");}
+        break;
+      case FINGERPRINT_NOFINGER:
+        if (debug) Serial.print(".");
+        break;
+      case FINGERPRINT_PACKETRECIEVEERR:
+        if (debug) {Serial.println("Communication error");} /*else {
+          Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+        }*/
+        simpanJari = false;
+        return p;
+      case FINGERPRINT_IMAGEFAIL:
+        if (debug) {Serial.println("Imaging error");} /*else {
+          Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+        }*/
+        simpanJari = false;
+        return p;
+      default:
+        if (debug) {Serial.println("Unknown error");} /*else {
+          Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+        }*/
+        simpanJari = false;
+        return p;
     }
+    c_tOut++;
+    if (c_tOut > tOut) return true;
     RFID_read();
   }
+  c_tOut = 0;
 
-  // OK success!
-//  if (!debug) Serial.println("#FP::Pertahankan Jari Di Sensor ...*");
+//  OK success!
+//  if (!debug) Serial.println("#FP::Daftar::Pertahankan Jari Di Sensor ...*");
   p = finger.image2Tz(2);
   switch (p) {
     case FINGERPRINT_OK:
       if (debug) Serial.println("Image converted");
       break;
     case FINGERPRINT_IMAGEMESS:
-      if (debug) Serial.println("Image too messy");
+      if (debug) {Serial.println("Image too messy");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     case FINGERPRINT_PACKETRECIEVEERR:
-      if (debug) Serial.println("Communication error");
+      if (debug) {Serial.println("Communication error");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     case FINGERPRINT_FEATUREFAIL:
-      if (debug) Serial.println("Could not find fingerprint features");
+      if (debug) {Serial.println("Could not find fingerprint features");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     case FINGERPRINT_INVALIDIMAGE:
-      if (debug) Serial.println("Could not find fingerprint features");
+      if (debug) {Serial.println("Could not find fingerprint features");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
     default:
-      Serial.println("Unknown error");
+      if (debug) {Serial.println("Unknown error");} /*else {
+        Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+      }*/
+      simpanJari = false;
       return p;
   }
-  
-  
-  // OK converted!
+
+//  OK converted!
   p = finger.createModel();
   if (p == FINGERPRINT_OK) {
     if (debug) Serial.println("Prints matched!");
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    if (debug) Serial.println("Communication error");
+    if (debug) {Serial.println("Communication error");} /*else {
+      Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+    }*/
+    simpanJari = false;
     return p;
   } else if (p == FINGERPRINT_ENROLLMISMATCH) {
-    if (debug) Serial.println("Fingerprints did not match");
+    if (debug) {Serial.println("Fingerprints did not match");} /*else {
+      Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+    }*/
+    simpanJari = false;
     return p;
   } else {
-    if (debug) Serial.println("Unknown error");
+    if (debug) {Serial.println("Unknown error");} /*else {
+      Serial.print("#FP::ID "); Serial.print(id); Serial.println(" Gagal Tersimpan*");
+    }*/
+    simpanJari = false;
     return p;
   }   
-
+  
   if (debug) {
-    Serial.print("ID #"); Serial.println(id);
-  } else{
+    Serial.print("ID #"); Serial.print(id);
+  } /*else {
     Serial.print("#FP::ID "); Serial.print(id);
-  }
+  }*/
   p = finger.storeModel(id);
   if (p == FINGERPRINT_OK) {
     if (debug) {
-      Serial.println("Stored!");
-    } else {
+      Serial.println(" Stored!");
+    } /*else {
       Serial.println(" Berhasil Tersimpan*");
-    }
+    }*/
     simpanJari = true;
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
     if (debug) {
       Serial.println("Communication error");
-    } else {
+    } /*else {
       Serial.println(" Gagal Tersimpan*");
-    }
+    }*/
     simpanJari = false;
     return p;
   } else if (p == FINGERPRINT_BADLOCATION) {
     if (debug) {
       Serial.println("Could not store in that location");
-    } else {
+    } /*else {
       Serial.println(" Gagal Tersimpan*");
-    }
+    }*/
     simpanJari = false;
     return p;
   } else if (p == FINGERPRINT_FLASHERR) {
     if (debug) {
       Serial.println("Error writing to flash");
-    } else {
+    } /*else {
       Serial.println(" Gagal Tersimpan*");
-    }
+    }*/
     simpanJari = false;
     return p;
   } else {
     if (debug) {
       Serial.println("Unknown error");
-    } else {
+    } /*else {
       Serial.println(" Gagal Tersimpan*");
-    }
+    }*/
     simpanJari = false;
     return p;
-  }
-}
-
-uint8_t getFingerprintID() {
-  uint8_t p = finger.getImage();
-  switch (p) {
-    case FINGERPRINT_OK:
-      Serial.println("Image taken");
-      break;
-    case FINGERPRINT_NOFINGER:
-      Serial.println("No finger detected");
-      return p;
-    case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Communication error");
-      return p;
-    case FINGERPRINT_IMAGEFAIL:
-      Serial.println("Imaging error");
-      return p;
-    default:
-      Serial.println("Unknown error");
-      return p;
-  }
-
-  // OK success!
-
-  p = finger.image2Tz();
-  switch (p) {
-    case FINGERPRINT_OK:
-      Serial.println("Image converted");
-      break;
-    case FINGERPRINT_IMAGEMESS:
-      Serial.println("Image too messy");
-      return p;
-    case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Communication error");
-      return p;
-    case FINGERPRINT_FEATUREFAIL:
-      Serial.println("Could not find fingerprint features");
-      return p;
-    case FINGERPRINT_INVALIDIMAGE:
-      Serial.println("Could not find fingerprint features");
-      return p;
-    default:
-      Serial.println("Unknown error");
-      return p;
-  }
-  
-  // OK converted!
-  p = finger.fingerFastSearch();
-  if (p == FINGERPRINT_OK) {
-    Serial.println("Found a print match!");
-  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println("Communication error");
-    return p;
-  } else if (p == FINGERPRINT_NOTFOUND) {
-    Serial.println("Did not find a match");
-    return p;
-  } else {
-    Serial.println("Unknown error");
-    return p;
-  }   
-  
-  // found a match!
-  if (debug) {
-    Serial.print("Found ID #"); Serial.print(finger.fingerID); 
-    Serial.print(" with confidence of "); Serial.println(finger.confidence); 
   }
 }
 
