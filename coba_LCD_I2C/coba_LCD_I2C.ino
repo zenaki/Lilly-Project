@@ -20,15 +20,20 @@ void setup() {
 void loop() {
   int data = analogRead(A0);
 
-  lcd.setCursor(8,0);
-  lcd.print("    ");
-  lcd.setCursor(8,1);
-  lcd.print("    ");
-  
-  lcd.setCursor(8,0);
-  lcd.print(data);
-  lcd.setCursor(8,1);
-  lcd.print(data);
+//  lcd.setCursor(8,0);
+//  lcd.print("    ");
+//  lcd.setCursor(8,1);
+//  lcd.print("    ");
+//  
+//  lcd.setCursor(8,0);
+//  lcd.print(data);
+//  lcd.setCursor(8,1);
+//  lcd.print(data);
+
+  Display_LCD_str("    ", 8, 0);
+  Display_LCD_str("    ", 8, 1);
+  Display_LCD_int(data, 8, 0);
+  Display_LCD_int(data, 8, 1);
 
   delay(10);
 }
@@ -44,3 +49,13 @@ void loop() {
 //    }
 //  }
 //}
+
+void Display_LCD_str(const char vC[], int vCursor_Row, int vCursor_Col) {
+  lcd.setCursor(vCursor_Row, vCursor_Col);
+  lcd.print(vC);
+}
+
+void Display_LCD_int(int vC, int vCursor_Row, int vCursor_Col) {
+  lcd.setCursor(vCursor_Row, vCursor_Col);
+  lcd.print(vC);
+}
